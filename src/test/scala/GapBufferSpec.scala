@@ -8,7 +8,7 @@ class GapBufferSpec extends Specification {
     
 
     "insert text correctly" in {
-      val g = new GapBuffer()
+      val g = new GapBuffer[Char]()
       val machine = for {
         _ <- g.insert('h')
         _ <- g.insert('e')
@@ -22,7 +22,7 @@ class GapBufferSpec extends Specification {
     }
 
     "move point left and insert text in middle" in {
-      val g = new GapBuffer()
+      val g = new GapBuffer[Char]()
       val machine = for {
         _ <- g.insert('h')
         _ <- g.insert('l')
@@ -39,7 +39,7 @@ class GapBufferSpec extends Specification {
     }
 
     "move point left nad right and then insert text" in {
-      val g = new GapBuffer()
+      val g = new GapBuffer[Char]()
       val machine = for {
         _ <- g.insert('h')
         _ <- g.insert('e')
@@ -58,12 +58,7 @@ class GapBufferSpec extends Specification {
       g.go(machine)._2 mustEqual "hello you"
     }
 
-    def checkState(expected: GapState) = State[GapState, Unit] { case state =>
-      state mustEqual expected
-      (state, ())
-    }
-
-    def checkBuffer(str: String, expected: String) = State[GapState, Unit] { case state =>
+    def checkBuffer[A](str: String, expected: String) = State[GapState[A], Unit] { case state =>
       str mustEqual expected
       (state, ())
     }
@@ -71,101 +66,77 @@ class GapBufferSpec extends Specification {
     "move the point correctly" in {
 
       val size = 30
-      val g = new GapBuffer(size)
+      val g = new GapBuffer[Char](size)
       val machine = for {
-        _ <- checkState(GapState(0, 0, 30))
         _ <- g.print.flatMap(checkBuffer(_, ""))
 
         _ <- g.insert('e')
-        _ <- checkState(GapState(1, 1, 30))
         _ <- g.print.flatMap(checkBuffer(_, "e"))
 
         _ <- g.insert('l')
-        _ <- checkState(GapState(2, 2, 30))
         _ <- g.print.flatMap(checkBuffer(_, "el"))
 
         _ <- g.insert('l')
-        _ <- checkState(GapState(3, 3, 30))
         _ <- g.print.flatMap(checkBuffer(_, "ell"))
 
         _ <- g.insert('o')
-        _ <- checkState(GapState(4, 4, 30))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.left
-        _ <- checkState(GapState(3, 3, 29))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.left
-        _ <- checkState(GapState(2, 2, 28))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.left
-        _ <- checkState(GapState(1, 1, 27))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.left
-        _ <- checkState(GapState(0, 0, 26))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.left
-        _ <- checkState(GapState(0, 0, 26))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.left
-        _ <- checkState(GapState(0, 0, 26))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.left
-        _ <- checkState(GapState(0, 0, 26))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.left
-        _ <- checkState(GapState(0, 0, 26))
         _ <- g.print.flatMap(checkBuffer(_, "ello"))
 
         _ <- g.insert('h')
-        _ <- checkState(GapState(1, 1, 26))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(2, 2, 27))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(3, 3, 28))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(4, 4, 29))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(5, 5, 30))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(5, 5, 30))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(5, 5, 30))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(5, 5, 30))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(5, 5, 30))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.right
-        _ <- checkState(GapState(5, 5, 30))
         _ <- g.print.flatMap(checkBuffer(_, "hello"))
 
         _ <- g.insert('!')
-        _ <- checkState(GapState(6, 6, 30))
         _ <- g.print.flatMap(checkBuffer(_, "hello!"))
         result <- g.print
       } yield(result)
@@ -174,7 +145,7 @@ class GapBufferSpec extends Specification {
     }
 
     "delete correctly" in {
-      val g = new GapBuffer(30)
+      val g = new GapBuffer[Char](30)
       val machine = for {
         _ <- g.insert('y')
         _ <- g.insert('u')
@@ -196,9 +167,8 @@ class GapBufferSpec extends Specification {
     }
 
     "expand when needed" in {
-      val g = new GapBuffer(2)
+      val g = new GapBuffer[Char](2)
       val machine = for {
-        
         _ <- g.insert('w')
         _ <- g.insert('o')
         _ <- g.insert('r')

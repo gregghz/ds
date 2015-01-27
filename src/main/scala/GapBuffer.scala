@@ -4,7 +4,6 @@ import scala.reflect.ClassTag
 import scalaz.State
 
 case class GapState[A](
-  point: Int,
   gapStart: Int, // first non-character element of gap
   gapEnd: Int, // first valid char in right set
   private[ds] buffer: Array[A]
@@ -13,11 +12,11 @@ case class GapState[A](
 class GapBuffer[A](val state: GapState[A])(implicit t: ClassTag[A]) {
 
   def this()(implicit t: ClassTag[A]) = {
-    this(GapState(0, 0, 30, new Array[A](30)))
+    this(GapState(0, 30, new Array[A](30)))
   }
 
   def this(size: Int)(implicit t: ClassTag[A]) = {
-    this(GapState(0, 0, size, new Array[A](size)))
+    this(GapState(0, size, new Array[A](size)))
   }
 
   def go(machine: State[GapState[A], String]) = {
@@ -25,16 +24,15 @@ class GapBuffer[A](val state: GapState[A])(implicit t: ClassTag[A]) {
   }
 
   def insert(c: A) = State[GapState[A], Unit] { case state =>
-    val newGapStart = state.point + 1
+    val newGapStart = state.gapStart + 1
     val realState = if (newGapStart == state.gapEnd) {
       expand(state)
     } else {
       state
     }
-    realState.buffer(realState.point) = c
+    realState.buffer(realState.gapStart) = c
     (realState.copy(
-      point = realState.point + 1,
-      gapStart = realState.point + 1
+      gapStart = realState.gapStart + 1
     ), ())
   }
 
@@ -49,7 +47,7 @@ class GapBuffer[A](val state: GapState[A])(implicit t: ClassTag[A]) {
       newBuffer(i + newGapSize - 1) = state.buffer(i)
     }
 
-    GapState(state.gapStart, state.gapStart, state.gapStart + newGapSize, newBuffer)
+    GapState(state.gapStart, state.gapStart + newGapSize, newBuffer)
   }
 
   val delete = State[GapState[A], Unit] { case state =>
@@ -57,7 +55,7 @@ class GapBuffer[A](val state: GapState[A])(implicit t: ClassTag[A]) {
     if (newGapStart < 0)
       (state, ())
     else
-      (state.copy(newGapStart, newGapStart), ())
+      (state.copy(newGapStart), ())
   }
 
   val left = State[GapState[A], Unit] { case state =>
@@ -68,7 +66,7 @@ class GapBuffer[A](val state: GapState[A])(implicit t: ClassTag[A]) {
       (state, ())
     } else {
       state.buffer(newGapEnd) = state.buffer(newGapStart)
-      (state.copy(newGapStart, newGapStart, newGapEnd), ())
+      (state.copy(newGapStart, newGapEnd), ())
     }
   }
 
@@ -80,7 +78,7 @@ class GapBuffer[A](val state: GapState[A])(implicit t: ClassTag[A]) {
       (state, ())
     } else {
       state.buffer(state.gapStart) = state.buffer(state.gapEnd)
-      (state.copy(state.point + 1, newGapStart, newGapEnd), ())
+      (state.copy(newGapStart, newGapEnd), ())
     }
   }
 
